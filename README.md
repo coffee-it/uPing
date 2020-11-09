@@ -32,15 +32,16 @@ Optional
 ### Class methods
 #### Ping.start()
 > Starting ping loop with given parameters. Always starts at the first sequence number.
-> If quiet then returns tupple with ping results
-> result(tx=4, rx=4, losses=0, min=106.221, avg=106.606, max=107.521)
-> tx - transmitted
-> rx - received
-> losses - percentage of packets that be lost
+
+> If quiet then returns tupple with ping results:<br>
+> result(tx=4, rx=4, losses=0, min=106.221, avg=106.606, max=107.521)<br>
+> Where:<br>
+> tx - transmitted, 
+> rx - received, 
+> losses - percentage of packets that be lost.
 
 #### Ping.ping()
 > Sending just a one packet. Keeps and increment current sequence number.
-> Returns sequense number(int), round-trip time (ms, float), ttl(int)
 ```python
 import uping
 pinger = uping.Ping('example.org')
@@ -48,4 +49,5 @@ pinger = uping.Ping('example.org')
 pong = pinger.ping()
 print(pong)
 ```
+> Returns sequense number(int), round-trip time (ms, float), ttl(int)<br>
 > (5, 106.521, 54)
