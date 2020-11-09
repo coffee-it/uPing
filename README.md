@@ -1,4 +1,4 @@
-### µPing (MicroPing) for MicroPython (Unix version)
+## µPing (MicroPing) for MicroPython (Unix version)
 
 Run with default settings
 ```python
@@ -15,8 +15,8 @@ PING example.org (93.184.216.34): 56 data bytes
 4 packets transmitted, 4 packets received, 0 packet loss
 round-trip min/avg/max = 106.221/106.606/107.521 ms
 ```
-
-#### Arguments:
+---
+### Arguments:
 Required
 - HOST     (FQDN or IP address)
 
@@ -27,17 +27,20 @@ Optional
 - SIZE     (default: 64, bytes)
 - TIMEOUT  (default: 5000, ms)
 - quiet    (default: False, bool)
+---
 
-If quiet then returns tupple with ping results
-```
-result(tx=4, rx=4, losses=0, min=106.221, avg=106.606, max=107.521)
-```
-tx - transmitted
-rx - received
-losses - percentage of packets that be lost
+### Class methods
+#### Ping.start()
+> Starting ping loop with given parameters. Always starts at the first sequence number.
+> If quiet then returns tupple with ping results
+> result(tx=4, rx=4, losses=0, min=106.221, avg=106.606, max=107.521)
+> tx - transmitted
+> rx - received
+> losses - percentage of packets that be lost
 
-#### Pings also can be sended manually
-Run with default settings
+#### Ping.ping()
+> Sending just a one packet. Keeps and increment current sequence number.
+> Returns sequense number(int), round-trip time (ms, float), ttl(int)
 ```python
 import uping
 pinger = uping.Ping('example.org')
@@ -45,7 +48,4 @@ pinger = uping.Ping('example.org')
 pong = pinger.ping()
 print(pong)
 ```
-Returns sequense number(int), round-trip time (ms, float), ttl(int)
-```
-(5, 106.521, 54)
-```
+> (5, 106.521, 54)
