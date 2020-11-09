@@ -32,7 +32,6 @@ Optional
 ### Class methods
 #### Ping.start()
 > Starting ping loop with given parameters. Always starts at the first sequence number.
-
 > If quiet then returns tupple with ping results:<br>
 > result(tx=4, rx=4, losses=0, min=106.221, avg=106.606, max=107.521)<br>
 > Where:<br>
