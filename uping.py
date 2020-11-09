@@ -1,3 +1,10 @@
+# µPing (MicroPing) for MicroPython (Unix version)
+# License: MIT
+# copyright (c) 2020 coffee-it
+
+# recommendations from
+# https://forum.micropython.org/viewtopic.php?t=5287
+
 # µPing (MicroPing) for MicroPython
 # copyright (c) 2018 Shawwwn <shawwwn1@gmail.com>
 # License: MIT
@@ -19,7 +26,7 @@ def checksum(data):
     cs = ~cs & 0xffff
     return cs
 
-def ping(host, count=4, timeout=5000, interval=10, quiet=False, size=64):
+def ping(host, count=4, timeout=5000, interval=1000, quiet=False, size=64):
     import utime
     import uselect
     import uctypes
@@ -42,57 +49,57 @@ def ping(host, count=4, timeout=5000, interval=10, quiet=False, size=64):
     h.type = 8 # ICMP_ECHO_REQUEST
     h.code = 0
     h.checksum = 0
-    h.id = urandom.randint(0, 65535)
+    h.id = urandom.getrandbits(16)
     h.seq = 1
 
     # init socket
     sock = usocket.socket(usocket.AF_INET, usocket.SOCK_RAW, 1)
     sock.setblocking(0)
     sock.settimeout(timeout/1000)
-    addr = usocket.getaddrinfo(host, 1)[0][-1][0] # ip address
-    sock.connect((addr, 1))
+    addr = usocket.getaddrinfo(host, 1)[0][-1] # ip address
+    sock.connect(addr)
+    addr = usocket.inet_ntop(usocket.AF_INET, addr[4:8])
     not quiet and print("PING %s (%s): %u data bytes" % (host, addr, len(pkt)))
 
     seqs = list(range(1, count+1)) # [1,2,...,count]
     c = 1
-    t = 0
+    t = interval
     n_trans = 0
     n_recv = 0
     finish = False
-    while t < timeout:
-        if t==interval and c<=count:
+    while c <= count:
+        if t == interval:
             # send packet
             h.checksum = 0
             h.seq = c
             h.timestamp = utime.ticks_us()
             h.checksum = checksum(pkt)
             if sock.send(pkt) == size:
-                n_trans += 1
                 t = 0 # reset timeout
+                n_trans += 1
             else:
                 seqs.remove(c)
             c += 1
 
-        # recv packet
-        while 1:
-            socks, _, _ = uselect.select([sock], [], [], 0)
-            if socks:
-                resp = socks[0].recv(4096)
-                resp_mv = memoryview(resp)
-                h2 = uctypes.struct(uctypes.addressof(resp_mv[20:]), pkt_desc, uctypes.BIG_ENDIAN)
-                # TODO: validate checksum (optional)
-                seq = h2.seq
-                if h2.type==0 and h2.id==h.id and (seq in seqs): # 0: ICMP_ECHO_REPLY
-                    t_elasped = (utime.ticks_us()-h2.timestamp) / 1000
-                    ttl = ustruct.unpack('!B', resp_mv[8:9])[0] # time-to-live
-                    n_recv += 1
-                    not quiet and print("%u bytes from %s: icmp_seq=%u, ttl=%u, time=%f ms" % (len(resp), addr, seq, ttl, t_elasped))
-                    seqs.remove(seq)
-                    if len(seqs) == 0:
-                        finish = True
+            # recv packet
+            while 1:
+                if sock:
+                    resp = sock.recv(4096)
+                    resp_mv = memoryview(resp)
+                    h2 = uctypes.struct(uctypes.addressof(resp_mv[20:]), pkt_desc, uctypes.BIG_ENDIAN)
+                    # TODO: validate checksum (optional)
+                    seq = h2.seq
+                    if h2.type==0 and h2.id==h.id and (seq in seqs): # 0: ICMP_ECHO_REPLY
+                        t_elasped = (utime.ticks_us()-h2.timestamp) / 1000
+                        ttl = ustruct.unpack('!B', resp_mv[8:9])[0] # time-to-live
+                        n_recv += 1
+                        not quiet and print("%u bytes from %s: icmp_seq=%u, ttl=%u, time=%f ms" % (len(resp[8:]), addr, seq, ttl, t_elasped))
+                        seqs.remove(seq)
+                        if len(seqs) == 0:
+                            finish = True
                         break
-            else:
-                break
+                else:
+                    break
 
         if finish:
             break
@@ -102,6 +109,5 @@ def ping(host, count=4, timeout=5000, interval=10, quiet=False, size=64):
 
     # close
     sock.close()
-    ret = (n_trans, n_recv)
     not quiet and print("%u packets transmitted, %u packets received" % (n_trans, n_recv))
     return (n_trans, n_recv)
